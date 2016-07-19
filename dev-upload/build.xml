@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name = "dev" basedir="./">
+	<property file = "scp.properties"/>
+	<target name="execMaven" description="invoke maven compile">
+		<exec executable="mvn">
+			<arg line="clean install -P chleon-nexus"/>
+		</exec>
+	</target>
+	
+	<target name="scpUpload" description="upload devlop war to server">
+		<scp file="/workspace/cloud/ui/target/ui.war"
+			todir="${scp.userId}:${scp.password}@${scp.hostname}:${scp.remotedir}/ui/webapps" trust="true"/>
+		<scp file="/workspace/cloud/core-service/target/core.war"
+			todir="${scp.userId}:${scp.password}@${scp.hostname}:${scp.remotedir}/core/webapps" trust="true"/>
+		<scp file="/workspace/cloud/ws/target/ws.war"
+			todir="${scp.userId}:${scp.password}@${scp.hostname}:${scp.remotedir}/ws/webapps" trust="true"/>	
+	</target>
+	
+	<target name="sshexec">
+		<tstamp>
+			 <format property="TODAY" pattern="yyyy-MM-dd" locale="cn" />
+		</tstamp>
+		<tstamp>
+			 <format property="NOW" pattern="yyyy-MM-dd-HH-mm-ss" locale="cn" />
+		</tstamp>
+		<sshexec host="${scp.hostname}" username="${scp.userId}" password="${scp.password}"
+			command="cd /home/songbw/deploy/server/;
+					 rm -rf ui/webapps/root ;
+					 rm -rf core/webapps/root ;
+					 rm -rf ws/webapps/root;
+					 unzip ui/webapps/ui.war -d ui/webapps/root;
+					 unzip core/webapps/core.war -d core/webapps/root; 
+					 unzip ws/webapps/ws.war -d ws/webapps/root;
+					 mkdir /tmp/${NOW};
+					 mv ui/webapps/ui.war /tmp/${NOW}/ui.war;
+					 mv core/webapps/core.war /tmp/${NOW}/core.war;
+					 mv ws/webapps/ws.war /tmp/${NOW}/ws.war;					 			 cd ui;
+					 bin/jetty.sh restart;
+					 cd ../core;
+					 bin/jetty.sh restart;
+					 cd ../ws;
+					 bin/jetty.sh restart;
+					" 
+			trust="true"/>
+	</target>
+</project>

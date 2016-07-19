@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name = "test" basedir="./">
+	<property file = "scp.properties"/>
+	<target name="execMaven" description="invoke maven compile">
+		<exec executable="mvn">
+			<arg line="clean install -P chleon-nexus,production-cn"/>
+		</exec>
+	</target>
+	<target name="scpUpload" description="Upload test war to server">
+		<scp file="/workspace/cloud/ui/target/ui.war"
+			todir="${scp.userId}:${scp.password}@${scp.hostname}:${scp.remotedir}" trust="true"/>
+		<scp file="/workspace/cloud/core-service/target/core.war"
+			todir="${scp.userId}:${scp.password}@${scp.hostname}:${scp.remotedir}" trust="true"/>
+		<scp file="/workspace/cloud/ws/target/ws.war"
+			todir="${scp.userId}:${scp.password}@${scp.hostname}:${scp.remotedir}" trust="true"/>	
+	</target>
+	
+	<target name="sshexec">
+		<tstamp>
+			 <format property="TODAY" pattern="yyyy-MM-dd" locale="cn" />
+		</tstamp>
+		<tstamp>
+			 <format property="NOW" pattern="yyyy-MM-dd-HH-mm-ss" locale="cn" />
+		</tstamp>
+		<sshexec host="${scp.hostname}" username="${scp.userId}" password="${scp.password}"
+			command="cd /data/webapp/;
+					 rm -rf ui ui-${NOW};
+					 rm -rf core core-${NOW};
+					 rm -rf ws ws-${NOW};
+					 unzip ui.war -d ui;
+					 unzip core.war -d core; 
+					 unzip ws.war -d ws;
+					 mkdir /tmp/${NOW};
+					 mv ui.war /tmp/${NOW}/ui.war;
+					 mv core.war /tmp/${NOW}/core.war;
+					 mv ws.war /tmp/${NOW}/ws.war;
+					" 
+			trust="true"/>
+	</target>
+	
+    <target name="remote-tomcat-stop">  
+        <sshexec host="${scp.hostname}" username="${scp.userId}"   
+            password="${scp.password}" command="
+			export JAVA_HOME=/opt/jdk1.7.0_79;
+			/data/server/tomcat-core/bin/catalina.sh stop;
+			/data/server/tomcat-ui/bin/catalina.sh stop;
+			/data/server/tomcat-ws/bin/catalina.sh stop;
+			" trust="true" />  
+    </target>
+	
+    <target name="remote-tomcat-start">  
+        <sshexec host="${scp.hostname}" username="${scp.userId}"   
+            password="${scp.password}" command="
+			export JAVA_HOME=/opt/jdk1.7.0_79;
+			/data/server/tomcat-core/bin/startup.sh;
+			/data/server/tomcat-ui/bin/startup.sh;
+			/data/server/tomcat-ws/bin/startup.sh;
+			" trust="true" />  
+    </target>
+</project>

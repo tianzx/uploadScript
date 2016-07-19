@@ -1,0 +1,83 @@
+plugins {
+	id 'org.hidetake.ssh' version '2.4.0'
+}
+def properties = new Properties()
+new File("gradle.properties").withInputStream {
+	stream -> properties.load(stream)
+}
+remotes {
+	dev {
+		host = properties.getProperty('host')
+		user = properties.getProperty('user')
+		password = properties.getProperty('password')
+	}
+}
+class Dir {
+	String baseDir
+	String ui
+	String core
+	String ws
+	List<String> srcDirs = new ArrayList<String>()
+	List<String> names = new ArrayList<String>()
+	static final String path = "/home/songbw/deploy/server/"
+	Dir(String baseDir, String ui, String core, String ws) {
+		this.baseDir = baseDir
+		this.ui = baseDir+ui
+		this.core = baseDir+core
+		this.ws = baseDir+ws
+		names.add("ui")
+		names.add("core")
+		names.add("ws")
+	}
+
+
+	List<String> getFiles() {
+		srcDirs.add(ui)
+		srcDirs.add(core)
+		srcDirs.add(ws)
+		return srcDirs
+	}
+}
+def  srcDir_dev = new Dir('/workspace/cloud/','ui/target/ui.war','core-service/target/core.war','ws/target/ws.war')
+def  destDir_dev = new Dir('/home/songbw/deploy/server/','ui/webapps','core/webapps','ws/webapps')
+task execMvn(type:Exec) {
+	def dir = '/workspace/cloud/cv'
+	workingDir  dir
+	commandLine 'mvn','clean','install','-P','chleon-nexus'
+}
+task upload() << {
+	ssh.run {
+		session(remotes.dev) {
+			def i =0
+			for (String file: srcDir_dev.getFiles()){
+				put from:file, into:destDir_dev.getFiles().get(i++)
+			}
+
+		}
+	}
+}
+task excute() << {
+	def now = System.currentTimeMillis()
+	def path = Dir.path
+	ssh.run {
+		session(remotes.dev) {
+			execute "mkdir /tmp/$now";
+			for (String name:srcDir_dev.getNames()){
+				execute "rm -rf $path/"+name+"/webapps/root" ;
+				execute "unzip $path/" +name+"/webapps/"+name+".war -d $path/"+name+"/webapps/root";
+				execute "mv $path/"+name+"/webapps/"+name+".war /tmp/$now/"+name+".war";
+			}
+		}
+	}
+}
+task restart() << {
+	def path = Dir.path
+	ssh.run {
+		session(remotes.dev) {
+			for (String name:srcDir_dev.getNames()) {
+				execute "$path/"+name+"/bin/jetty.sh restart";
+			}
+		}
+	}
+
+}
