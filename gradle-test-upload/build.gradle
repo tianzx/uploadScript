@@ -63,16 +63,16 @@ task upload() << {
 		}
 	}
 }
+
 task excute() << {
 	def now = System.currentTimeMillis()
-	def path = Dir.path
+	def path = "/data/webapp"
 	ssh.run {
 		session(remotes.dev) {
 			execute "mkdir /tmp/$now";
 			for (String name:srcDir_dev.getNames()){
-				 excute "rm -rf" + name;
-				 excute "unzip"+name+".war -d" +name;
-				 excute "mv" +name+".war /tmp/$now/"+name+".war";
+				execute "rm -rf $path/"+name+"/webapps/root" ;
+				execute "unzip $path/" +name+".war -d $path/"+name;							execute "mv $path/"+name+".war /tmp/$now/"+name;
 			}
 		}
 	}
