@@ -1,0 +1,30 @@
+plugins {
+    id 'org.hidetake.ssh' version '2.7.0'
+
+}
+def properties = new Properties()
+new File("gradle.properties").withInputStream {
+    stream -> properties.load(stream)
+}
+remotes {
+    dev {
+        host = properties.getProperty('host')
+        user = properties.getProperty('user')
+        password = properties.getProperty('password')
+    }
+}
+
+task task1(){
+    ssh.run {
+        session(remotes.dev) {
+            def i = 0
+            execute "touch /home/songbw/tianzx/file" + i
+        }
+    }
+    ssh.run {
+        session(remotes.dev) {
+            def i = 100
+            execute "touch /home/songbw/tianzx/file" + i
+        }
+    }
+}

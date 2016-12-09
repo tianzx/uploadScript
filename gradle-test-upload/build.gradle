@@ -1,5 +1,6 @@
 plugins {
-	id 'org.hidetake.ssh' version '2.4.0'
+	id 'org.hidetake.ssh' version '2.7.0'
+
 }
 def properties = new Properties()
 new File("gradle.properties").withInputStream {
